@@ -1,60 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { useAuth } from '../store/authStore';
 import { useDB } from '../store/dbStore';
-import { Lock } from 'lucide-react';
+import { Lock, Loader2 } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
   const login = useAuth((state) => state.login);
-  const users = useDB((state) => state.users);
+  const fetchServerDB = useDB((state) => state.fetchServerDB);
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchServerDB();
+  }, [fetchServerDB]);
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
-    // Super Admin check (Cybersecurity High-Security Credentials Only)
-    const isCyberAdmin = 
-      (username === 'SuperAdmin_CyberX_2030' && password === 'SecPass_9824#OdayQut!2030') ||
-      (username === 'odqy5qutqutadmin2030' && password === 'u20102030ooy79');
+    try {
+      // Refresh latest users from central database
+      await fetchServerDB();
+      const latestUsers = useDB.getState().users || [];
 
-    if (isCyberAdmin) {
-      login({
-        id: 'super-admin-id',
-        username: 'Admin (مدير النظام)',
-        role: 'SUPER_ADMIN',
-      });
-      navigate('/super-admin');
-      return;
-    }
+      // Super Admin check (Cybersecurity High-Security Credentials Only)
+      const isCyberAdmin = 
+        (username === 'SuperAdmin_CyberX_2030' && password === 'SecPass_9824#OdayQut!2030') ||
+        (username === 'odqy5qutqutadmin2030' && password === 'u20102030ooy79');
 
-    // Normal Users
-    const user = users.find(u => (u.username === username || u.email === username) && (u as any).password === password);
-    if (user) {
-      if (user.isDeleted) {
-        setError('⚠️ هذا الحساب محذوف أو مؤرشف حالياً. يرجى التواصل مع إدارة النظام لإعادة تفعيله واسترجاعه.');
-        return;
-      }
-      if (user.isSuspended) {
-        setError('⚠️ تم تعليق هذا الحساب مؤقتاً (بسبب عدم تسديد المستحقات أو المراجعة). يرجى التواصل مع إدارة النظام لفك التعليق.');
-        return;
-      }
-      if (user.role === 'SUPER_ADMIN') {
-        login(user);
+      if (isCyberAdmin) {
+        login({
+          id: 'super-admin-id',
+          username: 'Admin (مدير النظام)',
+          role: 'SUPER_ADMIN',
+        });
         navigate('/super-admin');
         return;
       }
-      login(user);
-      navigate('/app');
-    } else {
-      setError('بيانات الدخول غير صحيحة');
+
+      // Normal Users
+      const user = latestUsers.find(u => (u.username === username || u.email === username) && (u as any).password === password);
+      if (user) {
+        if (user.isDeleted) {
+          setError('⚠️ هذا الحساب محذوف أو مؤرشف حالياً. يرجى التواصل مع إدارة النظام لإعادة تفعيله واسترجاعه.');
+          return;
+        }
+        if (user.isSuspended) {
+          setError('⚠️ تم تعليق هذا الحساب مؤقتاً (بسبب عدم تسديد المستحقات أو المراجعة). يرجى التواصل مع إدارة النظام لفك التعليق.');
+          return;
+        }
+        if (user.role === 'SUPER_ADMIN') {
+          login(user);
+          navigate('/super-admin');
+          return;
+        }
+        login(user);
+        navigate('/app');
+      } else {
+        setError('بيانات الدخول غير صحيحة');
+      }
+    } catch (err) {
+      setError('حدث خطأ أثناء الاتصال بالخادم، يرجى المحاولة مرة أخرى.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -106,8 +122,15 @@ export default function Login() {
               </motion.p>
             )}
 
-            <Button type="submit" className="w-full h-12 text-base mt-4 shadow-lg shadow-indigo-200">
-              دخول
+            <Button type="submit" disabled={isLoading} className="w-full h-12 text-base mt-4 shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>جاري التحقق والتزامن...</span>
+                </>
+              ) : (
+                'دخول'
+              )}
             </Button>
           </form>
         </div>
