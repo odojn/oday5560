@@ -1,0 +1,8 @@
+{
+  "name": "Remix ode.5",
+  "description": "نظام مخزون ومبيعات كامل متكامل احترافي (Ode.5)",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

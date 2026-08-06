@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#4f46e5"/>
+  <rect x="32" y="32" width="448" height="448" rx="80" fill="url(#grad)" opacity="0.3"/>
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+  </defs>
+  <path d="M160 160h192v64H160z" fill="#ffffff" opacity="0.9"/>
+  <path d="M160 256h192v192H160z" fill="#ffffff" rx="16"/>
+  <text x="256" y="380" font-family="system-ui, sans-serif" font-size="110" font-weight="900" fill="#4f46e5" text-anchor="middle">ode.5</text>
+</svg>
