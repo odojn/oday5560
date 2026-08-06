@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Welcome from './pages/Welcome';
 import Login from './pages/Login';
@@ -19,8 +20,15 @@ import Damaged from './pages/dashboard/Damaged';
 import Settings from './pages/dashboard/Settings';
 import About from './pages/dashboard/About';
 import SuperAdmin from './pages/SuperAdmin';
+import { useDB } from './store/dbStore';
 
 export default function App() {
+  const fetchServerDB = useDB((state) => state.fetchServerDB);
+
+  useEffect(() => {
+    fetchServerDB();
+  }, [fetchServerDB]);
+
   return (
     <BrowserRouter>
       <div dir="rtl" className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans flex flex-col">
