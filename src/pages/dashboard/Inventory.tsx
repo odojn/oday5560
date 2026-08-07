@@ -3,7 +3,7 @@ import { useDB } from '../../store/dbStore';
 import { useAuth } from '../../store/authStore';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { Plus, Search, Eye, X } from 'lucide-react';
+import { Plus, Search, Eye, X, Barcode } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { motion, AnimatePresence } from 'motion/react';
 import { formatCurrency, formatNumber } from '../../utils/format';
@@ -107,6 +107,7 @@ export default function Inventory() {
             <thead className="bg-slate-50 text-slate-500 uppercase tracking-tighter border-b border-slate-100">
               <tr className="h-10 text-[10px]">
                 <th className="px-4 py-2 font-medium">المنتج</th>
+                <th className="px-4 py-2 font-medium">الكود / الباركود</th>
                 <th className="px-4 py-2 font-medium">الصنف</th>
                 <th className="px-4 py-2 font-medium">الكمية</th>
                 <th className="px-4 py-2 font-medium">سعر الشراء</th>
@@ -118,6 +119,16 @@ export default function Inventory() {
               {filteredProducts.map(prod => (
                 <tr key={prod.id} className={prod.quantity <= 10 ? "bg-orange-50/30" : ""}>
                   <td className="px-4 py-3 font-bold text-slate-700">{prod.name}</td>
+                  <td className="px-4 py-3 font-mono text-slate-600">
+                    {prod.barcode ? (
+                      <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+                        <Barcode className="w-3 h-3 text-indigo-600" />
+                        {prod.barcode}
+                      </span>
+                    ) : (
+                      <span className="text-slate-300">-</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-slate-500">{storeCategories.find(c => c.id === prod.categoryId)?.name}</td>
                   <td className={`px-4 py-3 ${prod.quantity <= 10 ? 'text-orange-600 font-semibold' : ''}`}>
                     {formatNumber(prod.quantity)} وحدة {prod.quantity <= 10 ? '(منخفض)' : ''}
@@ -164,7 +175,27 @@ export default function Inventory() {
         {isAdding && (
           <motion.form initial={{opacity:0, y:-10}} animate={{opacity:1, y:0}} exit={{opacity:0, height:0}} onSubmit={handleSubmit} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 grid md:grid-cols-3 gap-4">
             <Input label="اسم المنتج" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} required />
-            <Input label="رمز الباركود (Barcode)" value={formData.barcode} onChange={e => setFormData({...formData, barcode: e.target.value})} placeholder="أدخل أو امسح الباركود..." />
+            <div className="flex flex-col gap-1.5 w-full">
+              <label className="text-sm font-medium text-slate-700">رمز الباركود / الكود</label>
+              <div className="flex gap-2">
+                <Input 
+                  value={formData.barcode} 
+                  onChange={e => setFormData({...formData, barcode: e.target.value})} 
+                  placeholder="أدخل أو امسح الباركود..." 
+                />
+                <Button 
+                  type="button" 
+                  variant="secondary" 
+                  className="whitespace-nowrap text-xs px-3"
+                  onClick={() => {
+                    const generated = '629' + Math.floor(100000000 + Math.random() * 900000000).toString();
+                    setFormData({...formData, barcode: generated});
+                  }}
+                >
+                  توليد كود
+                </Button>
+              </div>
+            </div>
             <div className="flex flex-col gap-1.5 w-full">
               <label className="text-sm font-medium text-slate-700">الصنف</label>
               <select 

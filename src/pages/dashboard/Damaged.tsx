@@ -18,33 +18,35 @@ export default function Damaged() {
   const storeDamaged = damagedGoods.filter(d => d.storeId === storeId).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const [isAdding, setIsAdding] = useState(false);
-  const [formData, setFormData] = useState({ productId: '', quantity: 0, supplierCompany: '' });
+  const [formData, setFormData] = useState({ productId: '', quantity: '', supplierCompany: '' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const product = storeProducts.find(p => p.id === formData.productId);
     if (!product) return;
-    if (formData.quantity > product.quantity) {
+    const qtyNum = Number(formData.quantity) || 0;
+    if (qtyNum <= 0) return;
+    if (qtyNum > product.quantity) {
       alert('الكمية التالفة أكبر من المتوفر في المخزون');
       return;
     }
 
-    const lostValue = product.purchasePrice * formData.quantity;
+    const lostValue = product.purchasePrice * qtyNum;
 
     addDamagedGood({
       id: uuidv4(),
       storeId,
       productId: product.id,
-      quantity: formData.quantity,
+      quantity: qtyNum,
       lostValue,
       supplierCompany: formData.supplierCompany,
       createdAt: new Date().toISOString()
     });
 
-    updateProduct(product.id, { quantity: product.quantity - formData.quantity });
+    updateProduct(product.id, { quantity: product.quantity - qtyNum });
 
     setIsAdding(false);
-    setFormData({ productId: '', quantity: 0, supplierCompany: '' });
+    setFormData({ productId: '', quantity: '', supplierCompany: '' });
   };
 
   return (
@@ -78,7 +80,7 @@ export default function Damaged() {
               </select>
             </div>
             
-            <Input label="الكمية التالفة" type="number" min={1} value={formData.quantity} onChange={e => setFormData({...formData, quantity: Number(e.target.value)})} required />
+            <Input label="الكمية التالفة" type="number" min={1} value={formData.quantity} onChange={e => setFormData({...formData, quantity: e.target.value})} required />
             <Input label="الشركة الموردة (لاسترجاعها)" value={formData.supplierCompany} onChange={e => setFormData({...formData, supplierCompany: e.target.value})} className="md:col-span-2" />
             
             <div className="md:col-span-2 flex justify-end gap-3 mt-4">

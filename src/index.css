@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+input[type="number"], input[inputmode="numeric"], input[inputmode="decimal"] {
+  direction: ltr !important;
+  text-align: right !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useDB } from '../../store/dbStore';
 import { useAuth } from '../../store/authStore';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
+import { Input, convertArabicToEnglishNumbers } from '../../components/ui/Input';
 import { ShoppingCart, Printer, CheckCircle, Search, Barcode, CreditCard, UserPlus, Zap } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { formatCurrency, formatNumber } from '../../utils/format';
@@ -31,6 +31,9 @@ export default function RetailPOS() {
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [activeReceiptSale, setActiveReceiptSale] = useState<any | null>(null);
 
+  const [quickBarcode, setQuickBarcode] = useState('');
+  const [scanMessage, setScanMessage] = useState('');
+
   const filteredProducts = useMemo(() => {
     return storeProducts.filter(p => 
       p.name.includes(search) || 
@@ -52,11 +55,15 @@ export default function RetailPOS() {
   };
 
   const handleBarcodeScan = (scannedCode: string) => {
-    const matchedProduct = storeProducts.find(p => p.barcode === scannedCode || p.id === scannedCode);
+    const cleanCode = scannedCode.trim();
+    if (!cleanCode) return;
+    const matchedProduct = storeProducts.find(p => p.barcode === cleanCode || p.id === cleanCode || p.barcode === convertArabicToEnglishNumbers(cleanCode));
     if (matchedProduct) {
       addToCart(matchedProduct);
+      setScanMessage(`تمت إضافة: ${matchedProduct.name}`);
+      setTimeout(() => setScanMessage(''), 3000);
     } else {
-      alert(`لم يتم العثور على منتج بالباركود: ${scannedCode}`);
+      alert(`لم يتم العثور على منتج بالباركود: ${cleanCode}`);
     }
   };
 
@@ -155,26 +162,61 @@ export default function RetailPOS() {
       <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
         <div className="p-4 border-b border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <h4 className="font-bold text-slate-800">المنتجات المتاحة للمفرق</h4>
+            <h4 className="font-bold text-slate-800">المنتجات (المفرق)</h4>
             <Button 
               size="sm" 
               onClick={() => setIsScannerOpen(true)}
               className="bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 text-xs flex items-center gap-1.5"
             >
               <Barcode className="w-4 h-4" />
-              قارئ الباركود
+              كاميرا السكنر
             </Button>
           </div>
 
-          <div className="relative w-full sm:w-64">
-            <Search className="w-4 h-4 absolute right-3 top-3 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="ابحث بالاسم أو الباركود..." 
-              className="w-full h-10 pl-4 pr-9 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-sm"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
+          <div className="flex flex-wrap items-center gap-2">
+            {scanMessage && (
+              <span className="text-xs bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-lg animate-pulse">
+                ✓ {scanMessage}
+              </span>
+            )}
+            
+            {/* Quick Barcode USB Scanner Input */}
+            <div className="relative">
+              <Barcode className="w-4 h-4 absolute right-3 top-3 text-indigo-500" />
+              <input
+                type="text"
+                placeholder="مسح كود/باركود (Enter)..."
+                className="h-10 pl-3 pr-9 border border-indigo-200 rounded-lg text-xs bg-indigo-50/40 focus:bg-white focus:border-indigo-600 outline-none w-48 ltr font-mono"
+                value={quickBarcode}
+                onChange={(e) => setQuickBarcode(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && quickBarcode) {
+                    handleBarcodeScan(quickBarcode);
+                    setQuickBarcode('');
+                  }
+                }}
+              />
+            </div>
+
+            <div className="relative w-full sm:w-48">
+              <Search className="w-4 h-4 absolute right-3 top-3 text-slate-400" />
+              <input 
+                type="text" 
+                placeholder="ابحث بالاسم أو الباركود..." 
+                className="w-full h-10 pl-4 pr-9 rounded-lg border border-slate-200 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none text-xs"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && search) {
+                    const match = storeProducts.find(p => p.barcode === search || p.name === search);
+                    if (match) {
+                      addToCart(match);
+                      setSearch('');
+                    }
+                  }
+                }}
+              />
+            </div>
           </div>
         </div>
 

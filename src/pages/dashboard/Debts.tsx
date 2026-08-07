@@ -348,6 +348,20 @@ export default function Debts() {
                       <td className="px-6 py-4 font-mono font-extrabold text-rose-600">{formatCurrency(c.remainingDebt, storeSettings.currency)}</td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-2">
+                          {c.remainingDebt > 0 && (
+                            <button
+                              onClick={() => {
+                                const activeDebt = c.records.find(r => r.remainingAmount > 0);
+                                if (activeDebt) {
+                                  setPayingDebt(activeDebt);
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 flex items-center gap-1 shadow-sm"
+                            >
+                              <DollarSign className="w-3.5 h-3.5" />
+                              تسديد دين / دفعة
+                            </button>
+                          )}
                           <button
                             onClick={() => setViewingEntityStatement({ type: 'CUSTOMER', id: c.id, name: c.name })}
                             className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 flex items-center gap-1"
@@ -398,6 +412,20 @@ export default function Debts() {
                       <td className="px-6 py-4 font-mono font-extrabold text-rose-600">{formatCurrency(s.remainingDebt, storeSettings.currency)}</td>
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-2">
+                          {s.remainingDebt > 0 && (
+                            <button
+                              onClick={() => {
+                                const activeDebt = s.records.find(r => r.remainingAmount > 0);
+                                if (activeDebt) {
+                                  setPayingDebt(activeDebt);
+                                }
+                              }}
+                              className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 flex items-center gap-1 shadow-sm"
+                            >
+                              <DollarSign className="w-3.5 h-3.5" />
+                              تسديد دين / دفعة
+                            </button>
+                          )}
                           <button
                             onClick={() => setViewingEntityStatement({ type: 'SUPPLIER', id: s.id, name: s.name })}
                             className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-200 flex items-center gap-1"
