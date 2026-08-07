@@ -1,5 +1,16 @@
 export type Role = 'SUPER_ADMIN' | 'STORE_OWNER' | 'ACCOUNTANT' | 'INVENTORY_MANAGER';
 
+export interface UserPermissions {
+  viewPurchasePrice: boolean;      // رؤية سعر التكلفة والأرباح
+  maxDiscountPercent: number;      // الحد الأقصى للخصم المسموح به (%)
+  canChangePrices: boolean;        // إمكانية تغيير أسعار البيع يدوياً
+  canDeleteSales: boolean;         // إمكانية حذف المبيعات أو إلغاء الفواتير
+  canManageInventory: boolean;     // إدارة المنتجات إضافة وتعديل
+  canViewReports: boolean;         // رؤية التقارير والتقارير المالية
+  canManageDebts: boolean;         // إدارة الديون وتحصيل الدفعات
+  canApplyLandingCost: boolean;    // إدخال مصاريف الشحن والجمارك لحساب التكلفة الحقيقي (AVCO)
+}
+
 export interface User {
   id: string;
   username?: string;
@@ -11,6 +22,7 @@ export interface User {
   suspendedReason?: string;
   isDeleted?: boolean;
   deletedAt?: string;
+  permissions?: UserPermissions;
 }
 
 export interface Store {
@@ -30,6 +42,14 @@ export interface Category {
   description?: string;
 }
 
+export interface ProductUnit {
+  id: string;
+  unitName: string;          // اسم الوحدة: كرتونة، علبة، طرد، كيلو، جرام
+  conversionFactor: number;  // معامل التحويل للوحدة الأساسية (مثلاً الكرتونة = 24 حبة)
+  price: number;             // سعر بيع هذه الوحدة
+  barcode?: string;          // باركود مخصص للوحدة
+}
+
 export interface Product {
   id: string;
   storeId: string;
@@ -37,10 +57,12 @@ export interface Product {
   name: string;
   barcode?: string;
   description?: string;
-  purchasePrice: number;
-  wholesalePrice: number;
-  retailPrice?: number;
-  quantity: number;
+  purchasePrice: number;     // سعر الشراء/التكلفة المرجح (AVCO)
+  wholesalePrice: number;    // سعر الجملة
+  retailPrice?: number;      // سعر المفرق
+  quantity: number;          // الكمية المتاحة بالوحدة الأساسية
+  baseUnit?: string;         // الوحدة الأساسية (حبة، قطعة، كيلو، جرام، لتر)
+  units?: ProductUnit[];     // الوحدات الفرعية (كرتونة، علبة، كيلو...)
   expiryDate?: string;
   imageUrl?: string;
 }
@@ -67,8 +89,11 @@ export interface Supplier {
 
 export interface SaleItem {
   productId: string;
-  quantity: number;
-  price: number; // The price it was sold for
+  quantity: number;          // الكمية المباعة بالوحدة المختارة
+  price: number;             // سعر البيع المطبق
+  unitName?: string;         // اسم الوحدة (مثلاً كرتونة أو علبة)
+  conversionFactor?: number; // معامل التحويل للوحدة الأساسية
+  baseQuantitySold?: number; // الكمية الصافية المخصومة من المخزون الأساسي (quantity * conversionFactor)
 }
 
 export interface Sale {
@@ -126,6 +151,8 @@ export interface Expense {
 
 export interface StoreSettings {
   currency: string;
+  enableMultiUOM?: boolean;        // تفعيل إدارة وحدات القياس المتعددة (كرتونة/علبة/حبة)
+  costingMethod?: 'AVCO' | 'FIFO'; // طريقة حساب التكلفة (المتوسط المرجح AVCO)
 }
 
 export interface DamagedGood {

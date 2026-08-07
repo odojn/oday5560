@@ -588,31 +588,189 @@ export default function Debts() {
       {/* Payoff Payment Modal */}
       {payingDebt && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
-            <div className="flex justify-between items-center pb-4 border-b border-slate-100">
-              <h3 className="font-bold text-slate-800">تسديد دفعة دين - {payingDebt.entityName}</h3>
-              <button onClick={() => setPayingDebt(null)}><X className="w-5 h-5 text-slate-400" /></button>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-5 border border-slate-200">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl">
+                  <DollarSign className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-800">تسجيل دفعة سداد جزئية</h3>
+                  <p className="text-xs text-slate-500">صاحب الدين: <strong className="text-slate-800 font-bold">{payingDebt.entityName}</strong></p>
+                </div>
+              </div>
+              <button onClick={() => setPayingDebt(null)} className="text-slate-400 hover:text-slate-600 p-1">
+                <X className="w-5 h-5" />
+              </button>
             </div>
-            <form onSubmit={handleSavePayment} className="space-y-4 pt-4">
-              <div className="bg-slate-50 p-3 rounded-xl space-y-1 text-xs">
-                <p>إجمالي الدين الأصلي: <strong className="font-mono">{formatCurrency(payingDebt.totalAmount, storeSettings.currency)}</strong></p>
-                <p>المسدد سابقاً: <strong className="font-mono text-emerald-600">{formatCurrency(payingDebt.paidAmount, storeSettings.currency)}</strong></p>
-                <p>المتبقي الحالي: <strong className="font-mono text-rose-600">{formatCurrency(payingDebt.remainingAmount, storeSettings.currency)}</strong></p>
+
+            {/* If there are multiple active debts for this entity, allow switching between them */}
+            {(() => {
+              const entityActiveDebts = storeDebtRecords.filter(r => r.entityType === payingDebt.entityType && r.entityId === payingDebt.entityId && r.remainingAmount > 0);
+              if (entityActiveDebts.length > 1) {
+                return (
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-700 block">اختر الدين المراد تسديده:</label>
+                    <select
+                      value={payingDebt.id}
+                      onChange={e => {
+                        const sel = entityActiveDebts.find(d => d.id === e.target.value);
+                        if (sel) setPayingDebt(sel);
+                      }}
+                      className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold outline-none"
+                    >
+                      {entityActiveDebts.map(d => (
+                        <option key={d.id} value={d.id}>
+                          دين بتاريخ {new Date(d.createdAt).toLocaleDateString('ar-EG')} - متبقي {formatCurrency(d.remainingAmount, storeSettings.currency)} {d.notes ? `(${d.notes})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                );
+              }
+              return null;
+            })()}
+
+            {/* Debt Financial Summary & Progress */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div>
+                  <span className="text-slate-400 block mb-0.5">إجمالي الدين</span>
+                  <span className="font-mono font-bold text-slate-800 text-sm">{formatCurrency(payingDebt.totalAmount, storeSettings.currency)}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block mb-0.5">المسدد سابقاً</span>
+                  <span className="font-mono font-bold text-emerald-600 text-sm">{formatCurrency(payingDebt.paidAmount, storeSettings.currency)}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block mb-0.5">المتبقي حالياً</span>
+                  <span className="font-mono font-extrabold text-rose-600 text-sm">{formatCurrency(payingDebt.remainingAmount, storeSettings.currency)}</span>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-[11px] font-bold text-slate-500">
+                  <span>نسبة السداد: {payingDebt.totalAmount > 0 ? Math.round((payingDebt.paidAmount / payingDebt.totalAmount) * 100) : 0}%</span>
+                  <span>المتبقي: {payingDebt.totalAmount > 0 ? Math.round((payingDebt.remainingAmount / payingDebt.totalAmount) * 100) : 0}%</span>
+                </div>
+                <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden flex">
+                  <div 
+                    className="bg-emerald-500 h-full transition-all duration-300" 
+                    style={{ width: `${payingDebt.totalAmount > 0 ? (payingDebt.paidAmount / payingDebt.totalAmount) * 100 : 0}%` }}
+                  />
+                  <div 
+                    className="bg-rose-500 h-full transition-all duration-300" 
+                    style={{ width: `${payingDebt.totalAmount > 0 ? (payingDebt.remainingAmount / payingDebt.totalAmount) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* History of Partial Payments for this Debt */}
+            {(() => {
+              const paymentsForThisDebt = storeDebtPayments.filter(p => p.debtId === payingDebt.id);
+              if (paymentsForThisDebt.length > 0) {
+                return (
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                        سجل الدفعات الجزئية السابقة ({paymentsForThisDebt.length}):
+                      </span>
+                      <span className="text-[11px] text-emerald-600 font-mono font-bold">
+                        مجموع المسدد: {formatCurrency(paymentsForThisDebt.reduce((s, p) => s + p.amount, 0), storeSettings.currency)}
+                      </span>
+                    </p>
+                    <div className="max-h-36 overflow-y-auto bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-xs space-y-1.5 divide-y divide-slate-100">
+                      {paymentsForThisDebt.map((p, idx) => (
+                        <div key={p.id} className="pt-1.5 first:pt-0 flex justify-between items-center text-xs">
+                          <div>
+                            <span className="font-bold text-slate-800">دفعة #{idx + 1}</span>
+                            <span className="text-[10px] text-slate-400 block font-mono">
+                              {new Date(p.date).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}
+                            </span>
+                          </div>
+                          <div className="text-left">
+                            <span className="font-mono font-bold text-emerald-600">+{formatCurrency(p.amount, storeSettings.currency)}</span>
+                            {p.notes && <span className="text-[10px] text-slate-500 block">{p.notes}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <p className="text-xs text-slate-400 italic bg-slate-50 p-2.5 rounded-xl border border-slate-100 text-center">
+                  لا توجد دفعات جزئية مسجلة سابقاً لهذا الدين (دين جديد).
+                </p>
+              );
+            })()}
+
+            {/* New Partial Payment Form */}
+            <form onSubmit={handleSavePayment} className="space-y-4 pt-1">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold text-slate-700 block">مبلغ الدفعة الحالية</label>
+                  <span className="text-[11px] text-slate-400">حدد المبلغ المسدد</span>
+                </div>
+
+                <div className="flex gap-2">
+                  <Input 
+                    type="number" 
+                    value={paymentAmount} 
+                    onChange={e => setPaymentAmount(e.target.value)} 
+                    placeholder="0.00"
+                    className="font-mono text-base font-bold"
+                    required 
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setPaymentAmount(payingDebt.remainingAmount.toString())}
+                    className="px-3 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl whitespace-nowrap hover:bg-emerald-200 transition-colors"
+                  >
+                    سداد كامل
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentAmount((payingDebt.remainingAmount / 2).toFixed(2))}
+                    className="px-3 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-xl whitespace-nowrap hover:bg-indigo-100 transition-colors"
+                  >
+                    50%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentAmount((payingDebt.remainingAmount / 4).toFixed(2))}
+                    className="px-3 bg-slate-100 text-slate-700 text-xs font-bold rounded-xl whitespace-nowrap hover:bg-slate-200 transition-colors"
+                  >
+                    25%
+                  </button>
+                </div>
+
+                {/* Dynamic Remaining Balance Preview */}
+                {Number(paymentAmount) > 0 && (
+                  <div className="bg-emerald-50/80 p-2.5 rounded-xl border border-emerald-200 text-xs flex justify-between items-center text-emerald-900 font-bold">
+                    <span>الرصيد المتبقي بعد إضافة هذه الدفعة:</span>
+                    <span className="font-mono text-sm text-emerald-700">
+                      {formatCurrency(Math.max(0, payingDebt.remainingAmount - Number(paymentAmount)), storeSettings.currency)}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <Input 
-                label="المبلغ المسدد الآن" 
-                type="number" 
-                value={paymentAmount} 
-                onChange={e => setPaymentAmount(e.target.value)} 
-                placeholder={`أدخل مبلغ أقصاه ${payingDebt.remainingAmount}`}
-                required 
+                label="طريقة الدفع / ملاحظات الدفعة" 
+                value={paymentNotes} 
+                onChange={e => setPaymentNotes(e.target.value)} 
+                placeholder="مثال: دفعة نقداً، تحويل بنكي، كليك، شيك..." 
               />
-              <Input label="ملاحظات التسديد" value={paymentNotes} onChange={e => setPaymentNotes(e.target.value)} placeholder="مثال: دفعة نقداً" />
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
                 <Button type="button" variant="ghost" onClick={() => setPayingDebt(null)}>إلغاء</Button>
-                <Button type="submit">حفظ وتسديد الدفعة</Button>
+                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold">
+                  تسجيل الدفعة الجزئية
+                </Button>
               </div>
             </form>
           </div>
