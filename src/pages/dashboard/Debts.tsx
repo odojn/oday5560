@@ -22,6 +22,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { formatCurrency, formatNumber } from '../../utils/format';
 import { Customer, Supplier, DebtRecord, DebtPayment } from '../../types';
+import { InvoiceService } from '../../services/invoiceService';
 
 export default function Debts() {
   const { currentUser } = useAuth();
@@ -32,9 +33,10 @@ export default function Debts() {
     suppliers, addSupplier, updateSupplier, deleteSupplier,
     debtRecords, addDebtRecord, updateDebtRecord, deleteDebtRecord,
     debtPayments, addDebtPayment,
-    sales, settings
+    sales, stores, settings
   } = useDB();
 
+  const currentStore = stores.find(s => s.id === storeId);
   const storeSettings = settings[storeId] || { currency: 'ILS' };
 
   const [activeTab, setActiveTab] = useState<'CUSTOMERS' | 'SUPPLIERS' | 'PAYMENTS'>('CUSTOMERS');
@@ -680,7 +682,33 @@ export default function Debts() {
             </div>
 
             <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-between items-center">
-              <Button variant="ghost" onClick={() => window.print()} className="flex items-center gap-1 text-xs">
+              <Button 
+                variant="ghost" 
+                onClick={() => {
+                  const records = storeDebtRecords
+                    .filter(r => r.entityType === viewingEntityStatement.type && r.entityId === viewingEntityStatement.id)
+                    .map(r => ({
+                      date: r.createdAt,
+                      notes: r.notes,
+                      totalAmount: r.totalAmount,
+                      paidAmount: r.paidAmount,
+                      remainingAmount: r.remainingAmount,
+                      status: r.status,
+                      payments: storeDebtPayments
+                        .filter(p => p.debtId === r.id)
+                        .map(p => ({ date: p.date, amount: p.amount, notes: p.notes }))
+                    }));
+
+                  InvoiceService.printAccountStatement({
+                    storeName: currentStore?.name || 'المتجر التجاري',
+                    entityName: viewingEntityStatement.name,
+                    entityType: viewingEntityStatement.type,
+                    records,
+                    currency: storeSettings.currency
+                  });
+                }} 
+                className="flex items-center gap-1 text-xs"
+              >
                 <Printer className="w-4 h-4" /> طباعة كشف الحساب
               </Button>
               <Button onClick={() => setViewingEntityStatement(null)}>إغلاق</Button>

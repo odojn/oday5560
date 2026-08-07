@@ -77,7 +77,12 @@ export interface Sale {
   type: 'RETAIL' | 'WHOLESALE' | 'GENERAL';
   paymentType?: 'CASH' | 'CREDIT' | 'CARD';
   customerName?: string;
+  customerPhone?: string;
+  customerAddress?: string;
   customerId?: string;
+  subtotal?: number;
+  discount?: number;
+  tax?: number;
   paidAmount?: number;
   debtAmount?: number;
   items: SaleItem[];
